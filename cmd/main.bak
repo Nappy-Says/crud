@@ -44,7 +44,7 @@ func execute(host, port, dbConnectionString string) (err error){
 			return err
 		}
 	}
-	err = container.Invok(func(server app.Server){
+	err = container.Invok(func(server *app.Server){
 		server.Init()
 	}
 	if err != nil{
