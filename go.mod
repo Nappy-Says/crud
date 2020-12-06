@@ -1,4 +1,4 @@
-module github.com/Nappy-Says/sql
+module github.com/Nappy-Says/crud
 
 go 1.15
 
