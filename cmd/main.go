@@ -25,8 +25,8 @@ func execute(host, port, dbConnectionString string) (err error){
 	dependencies := []interface{}{
 		app.NewServer,
 		http.NewServeMux,
-		func() (pgxpool.Pool, error){
-			connCtx, _ := context.WithTimeout(context.Background(), time.Second)
+		func() (*pgxpool.Pool, error){
+			connCtx, _ := context.WithTimeout(context.Background(), time.Second*5)
 			return pgxpool.Connect(connCtx, dbConnectionString)
 		},
 		customers.NewService,
@@ -44,9 +44,9 @@ func execute(host, port, dbConnectionString string) (err error){
 			return err
 		}
 	}
-	err = container.Invok(func(server app.Server){
+	err = container.Invoke(func(server *app.Server){
 		server.Init()
-	}
+	})
 	if err != nil{
 		return err
 	}

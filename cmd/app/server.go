@@ -12,7 +12,7 @@ type Server struct {
 	mux         *http.ServeMux
 	customerSvc *customers.Service
 }
-func NewServer(m *http.ServeMux, sv customers.Service) *Server {
+func NewServer(m *http.ServeMux, cSvc *customers.Service) *Server {
 	return &Server{mux: m, customerSvc: cSvc}
 }
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func (s *Server) Init() {
 	http://127.0.0.1:9999/customers.getById?id=1
 	http://127.0.0.1:9999/customers.getAll
 	http://127.0.0.1:9999/customers.getAllActive
-	http://127.0.0.1:9999/customers.blockById?id=
+	http://127.0.0.1:9999/customers.blockById?id=1
 	http://127.0.0.1:9999/customers.unblockById?id=1
 	http://127.0.0.1:9999/customers.removeById?id=1
 	
@@ -118,7 +118,7 @@ func (s *Server) handleUnBlockByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err :=s.customerSvc.ChangeActive(r.Context(), id, true)
+	item, err := s.customerSvc.ChangeActive(r.Context(), id, true)
 	if errors.Is(err, customers.ErrNotFound) {
 		errorWriter(w, http.StatusNotFound, err)
 		return
@@ -153,7 +153,7 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, item)
 }
 
-func (s *Server) handleSave(w http.ResponseWriter, r http.Request) {
+func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 	idP := r.FormValue("id")
 	name := r.FormValue("name")
 	phone := r.FormValue("phone")
@@ -174,7 +174,7 @@ func (s *Server) handleSave(w http.ResponseWriter, r http.Request) {
 	customer, err := s.customerSvc.Save(r.Context(), item)
 
 	if err != nil {
-		errorWriter(StatusInternalServerError, err)
+		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
 	respondJSON(w, customer)
