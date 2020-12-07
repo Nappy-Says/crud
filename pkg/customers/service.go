@@ -23,10 +23,10 @@ type Customer struct {
 	Active  bool      `json:"active"`
 	Created time.Time `json:"created"`
 }
-func (s *Service) All(ctx context.Context) (cs []*Customer, err error) {
 
+//All ct
+func (s *Service) All(ctx context.Context) (cs []*Customer, err error) { 
 	sqlStatement := `select * from customers`
-
 	rows, err := s.db.Query(ctx, sqlStatement)
 	if err != nil {
 		return nil, err
@@ -77,6 +77,8 @@ func (s *Service) AllActive(ctx context.Context) (cs []*Customer, err error) {
 
 	return cs, nil
 }
+
+//ID
 func (s *Service) ByID(ctx context.Context, id int64) (*Customer, error) {
 	item := &Customer{}
 
@@ -98,7 +100,6 @@ func (s *Service) ByID(ctx context.Context, id int64) (*Customer, error) {
 	return item, nil
 
 }
-
 func (s *Service) ChangeActive(ctx context.Context, id int64, active bool) (*Customer, error) {
 	item := &Customer{}
 
@@ -142,11 +143,8 @@ func (s *Service) Delete(ctx context.Context, id int64) (*Customer, error) {
 
 }
 func (s *Service) Save(ctx context.Context, customer *Customer) (c *Customer, err error) {
-
 	item := &Customer{}
-
 	if customer.ID == 0 {
-
 		sqlStatement := `insert into customers(name, phone) values($1, $2) returning *`
 
 		err = s.db.QueryRow(ctx, sqlStatement, customer.Name, customer.Phone).Scan(
@@ -156,8 +154,9 @@ func (s *Service) Save(ctx context.Context, customer *Customer) (c *Customer, er
 			&item.Active,
 			&item.Created)
 
-
+	} else { 
 		sqlStatement := `update customers set name=$1, phone=$2 where id=$3 returning *`
+
 		err = s.db.QueryRow(ctx, sqlStatement, customer.Name, customer.Phone, customer.ID).Scan(
 			&item.ID,
 			&item.Name,

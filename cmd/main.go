@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	"go.uber.org/dig"
 	"time"
 	"context"
@@ -21,10 +22,11 @@ func main() {
 		os.Exit(1)
 	}
 }
+
 func execute(host, port, dbConnectionString string) (err error){
 	dependencies := []interface{}{
 		app.NewServer,
-		http.NewServeMux,
+		mux.NewRouter,
 		func() (*pgxpool.Pool, error){
 			connCtx, _ := context.WithTimeout(context.Background(), time.Second*5)
 			return pgxpool.Connect(connCtx, dbConnectionString)
