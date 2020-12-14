@@ -13,7 +13,7 @@ func NewService(db *pgxpool.Pool) *Service {
 	return &Service{db: db}
 }
 func (s *Service) Auth(login, password string) bool{
-	stateSql := `select login * password from managers where login=$1 and password=$2`
+	stateSql := `select login, password from managers where login=$1 and password=$2`
 
 	//Req 
 	err := s.db.QueryRow(context.Background(), stateSql, login, password).Scan(&loggin, &password)

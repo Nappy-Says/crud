@@ -7,10 +7,11 @@ import (
 	"strings"
 	"net/http"
 )
+
 func Basic(checkAuth func(string, string)bool) func(handler http.Handler)http.Handler{
 
 	return func(handler http.Handler)http.Handler{
-    //For exit
+
 		return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request){
 
 			login, pass, err := getLoginPass(r)
@@ -28,16 +29,14 @@ func Basic(checkAuth func(string, string)bool) func(handler http.Handler)http.Ha
 	}
 }
 
-
+//
 func getLoginPass(r *http.Request) (string, string, error){
-        
         auth := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-
         if len(auth) != 2 || auth[0] != "Basic" {
             return "", "", errors.New("invalid auth method") 
         }
 
-        payload, _ := base64.StdEncoding.DecodeString(auth[1])
+		payload, _ := base64.StdEncoding.DecodeString(auth[1])
 		pair := strings.SplitN(string(payload), ":", 2)
 		if len(pair) != 2 {
 			return "", "", errors.New("invalid auth data") 
