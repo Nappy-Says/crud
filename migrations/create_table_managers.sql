@@ -8,5 +8,6 @@ create table managers (
     boss_id bigint not null,
     department text,
     active boolean not null default true,
-    created timestamp not null default current_timestamp
+    created timestamp not null default current_timestamp 
+
 );
