@@ -20,7 +20,7 @@ const (
 	HOST = "0.0.0.0"
 	PORT = "9999"
 )
-
+//created in MRI PC
 func main() {
 	dsn := "postgres://app:pass@localhost:5432/db"
 	if err := execute(HOST, PORT, dsn); err != nil {

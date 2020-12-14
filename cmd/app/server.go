@@ -16,29 +16,54 @@ type Server struct {
 	customerSvc *customers.Service
 	securitySvc *security.Service
 }
+const (
+	GET    = "GET"
+	POST   = "POST"
+	DELETE = "DELETE"
+)
 
+func NewServer(mux *mux.Router, customerSvc *customers.Service, sSvc *security.Service) *Server {
+	return &Server{mux: mux, customerSvc: customerSvc, securitySvc: sSvc}
+}
+func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	s.mux.ServeHTTP(writer, request)
+}
 
-func NewServer(m *mux.Router, cSvc *customers.Service, sSvc *security.Service) *Server {
-	return &Server{
-		mux: m,
-		customerSvc: cSvc,
-		securitySvc: sSvc,
-	}
-}
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
-}
 func (s *Server) Init() {
-	s.mux.HandleFunc("/customers", s.handleGetAllCustomers).Methods("GET")
-	s.mux.HandleFunc("/customers/active", s.handleGetAllActiveCustomers).Methods("GET")
+	log.Println("Init method")
+	s.mux.HandleFunc("/customers", s.handleSave).Methods(POST)
+	s.mux.HandleFunc("/customers", s.handleGetAllCustomers).Methods(GET)
+	s.mux.HandleFunc("/customers/active", s.handleGetAllActiveCustomers).Methods(GET)
+	s.mux.HandleFunc("/customers/{id}", s.handleGetCustomerById).Methods(GET)
+	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods(DELETE)
+	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods(DELETE)
+	s.mux.HandleFunc("/customers/{id}/block", s.handleBlockByID).Methods(POST)
+	s.mux.Use(middleawre.Basic(s.securitySvc.Auth))
+}
 
-	s.mux.HandleFunc("/customers/{id}", s.handleGetCustomerByID).Methods("GET")
-	s.mux.HandleFunc("/customers/{id}/block", s.handleBlockByID).Methods("POST")
-	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods("DELETE")
-	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods("DELETE")
-	s.mux.HandleFunc("/customers", s.handleSave).Methods("POST")
+func (s *Server) handleGetCustomerById(writer http.ResponseWriter, request *http.Request) {
+	idParam := mux.Vars(request)["id"]
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		log.Println(err)
+		errorWriter(writer, http.StatusBadRequest, err)
+		return
+	}
 
-	s.mux.Use(middleware.Basic(s.securitySvc.Auth))
+	item, err := s.customerSvc.ByID(request.Context(), id)
+	log.Println(item)
+	if errors.Is(err, customers.ErrNotFound) {
+		errorWriter(writer, http.StatusNotFound, err)
+		return
+	}
+
+	if err != nil {
+		log.Println(err)
+		errorWriter(writer, http.StatusInternalServerError, err)
+		return
+	}
+
+	jsonResponse(writer, item)
 }
 
 func (s *Server) handleGetAllCustomers(w http.ResponseWriter, r *http.Request) {
@@ -49,11 +74,10 @@ func (s *Server) handleGetAllCustomers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, items)
+	jsonResponse(w, items)
 }
 
 func (s *Server) handleGetAllActiveCustomers(w http.ResponseWriter, r *http.Request) {
-
 	items, err := s.customerSvc.AllActive(r.Context())
 
 	if err != nil {
@@ -61,42 +85,20 @@ func (s *Server) handleGetAllActiveCustomers(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	respondJSON(w, items)
-}
-
-func (s *Server) handleGetCustomerByID(w http.ResponseWriter, r *http.Request) {
-	idP := mux.Vars(r)["id"]
-
-	id, err := strconv.ParseInt(idP, 10, 64)
-	if err != nil {
-		errorWriter(w, http.StatusBadRequest, err)
-		return
-	}
-
-	item, err := s.customerSvc.ByID(r.Context(), id)
-
-	if errors.Is(err, customers.ErrNotFound) {
-		errorWriter(w, http.StatusNotFound, err)
-		return
-	}
-
-	if err != nil {
-		errorWriter(w, http.StatusInternalServerError, err)
-		return
-	}
-	respondJSON(w, item)
+	jsonResponse(w, items)
 }
 
 func (s *Server) handleBlockByID(w http.ResponseWriter, r *http.Request) {
 	idP := mux.Vars(r)["id"]
-
 	id, err := strconv.ParseInt(idP, 10, 64)
+
 	if err != nil {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
 	}
 
 	item, err := s.customerSvc.ChangeActive(r.Context(), id, false)
+
 	if errors.Is(err, customers.ErrNotFound) {
 		errorWriter(w, http.StatusNotFound, err)
 		return
@@ -106,13 +108,14 @@ func (s *Server) handleBlockByID(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondJSON(w, item)
+
+	jsonResponse(w, item)
 }
 
 func (s *Server) handleUnBlockByID(w http.ResponseWriter, r *http.Request) {
 	idP := mux.Vars(r)["id"]
-
 	id, err := strconv.ParseInt(idP, 10, 64)
+
 	if err != nil {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
@@ -128,13 +131,13 @@ func (s *Server) handleUnBlockByID(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondJSON(w, item)
+	jsonResponse(w, item)
 }
 
 func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 	idP := mux.Vars(r)["id"]
-
 	id, err := strconv.ParseInt(idP, 10, 64)
+
 	if err != nil {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
@@ -150,7 +153,8 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondJSON(w, item)
+
+	jsonResponse(w, item)
 }
 
 func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
@@ -162,12 +166,12 @@ func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	customer, err := s.customerSvc.Save(r.Context(), item)
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	respondJSON(w, customer)
+
+	jsonResponse(w, customer)
 }
 
 func errorWriter(w http.ResponseWriter, httpSts int, err error) {
@@ -175,17 +179,16 @@ func errorWriter(w http.ResponseWriter, httpSts int, err error) {
 	http.Error(w, http.StatusText(httpSts), httpSts)
 }
 
-func respondJSON(w http.ResponseWriter, iData interface{}) {
-
-	data, err := json.Marshal(iData)
-
+func jsonResponse(writer http.ResponseWriter, data interface{}) {
+	item, err := json.Marshal(data)
 	if err != nil {
-		errorWriter(w, http.StatusInternalServerError, err)
+		errorWriter(writer, http.StatusInternalServerError, err)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(data)
+
+	writer.Header().Set("Content-Type", "application/json")
+	_, err = writer.Write(item)
 	if err != nil {
-		log.Print(err)
+		log.Println("Error write response: ", err)
 	}
 }
