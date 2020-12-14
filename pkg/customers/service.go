@@ -156,8 +156,7 @@ func (s *Service) Save(ctx context.Context, customer *Customer) (c *Customer, er
 			&item.Active,
 			&item.Created)
 
-
-		sqlStatement := `update customers set name=$1, phone=$2 where id=$3 returning *`
+		sqlStatement = `update customers set name=$1, phone=$2 where id=$3 returning *`
 		err = s.db.QueryRow(ctx, sqlStatement, customer.Name, customer.Phone, customer.ID).Scan(
 			&item.ID,
 			&item.Name,
