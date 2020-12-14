@@ -38,7 +38,7 @@ func (s *Server) Init() {
 	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods(DELETE)
 	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods(DELETE)
 	s.mux.HandleFunc("/customers/{id}/block", s.handleBlockByID).Methods(POST)
-	s.mux.Use(middleawre.Basic(s.securitySvc.Auth))
+	s.mux.Use(middleware.Basic(s.securitySvc.Auth))
 }
 
 func (s *Server) handleGetCustomerById(writer http.ResponseWriter, request *http.Request) {
