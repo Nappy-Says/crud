@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"github.com/gorilla/mux"
 	"github.com/Nappy-Says/crud/pkg/customers"
-).
+)
 type Server struct {
 	mux         *mux.Router
 	customerSvc *customers.Service
