@@ -11,6 +11,12 @@ import (
 	"time"
 	"log"
 )
+var (
+	ErrNoSuchUser      = errors.New("no such user")
+	ErrInvalidPassword = errors.New("invalid password")
+	ErrInternal        = errors.New("internal error")
+	ErrExpireToken     = errors.New("token expired")
+)
 type Service struct {
 	db *pgxpool.Pool
 }
