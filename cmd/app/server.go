@@ -205,6 +205,7 @@ func jsonResponse(writer http.ResponseWriter, data interface{}) {
 	}
 }
 
+//token too
 func (s *Server) handleGenerateToken(w http.ResponseWriter, r *http.Request) {
 	var item *struct {
 		Login    string `json:"login"`
