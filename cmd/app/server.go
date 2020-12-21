@@ -2,11 +2,12 @@ package app
 
 import (
 	"github.com/Nappy-Says/crud/pkg/security"
-	"github.com/Nappy-Says/crud/cmd/app/middleware"
+	//"github.com/Nappy-Says/crud/cmd/app/middleware"
 	"encoding/json"
 	"errors"
 	"log"
-	"fmt"
+//	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
 	"github.com/gorilla/mux"
