@@ -20,3 +20,10 @@ create table if not exists customers (
     active boolean not null default true,
     created timestamp default current_timestamp
 );
+
+create table if not exists customers_tokens (
+    token text not null unique,
+    customer_id bigint not null references customers,
+    expire timestamp not null default current_timestamp + interval '1 hour',
+    created timestamp not null default current_timestamp
+);

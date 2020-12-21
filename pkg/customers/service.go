@@ -155,18 +155,31 @@ func (s *Service) Save(ctx context.Context, customer *Customer) (c *Customer, er
 
 	if customer.ID == 0 {
 		sqlStatement := `INSERT INTO customers(name, phone) VALUES ($1, $2) RETURNING *`
-		err = s.pool.QueryRow(ctx, sqlStatement, customer.Name, customer.Phone).Scan(
+		err = s.pool.QueryRow(
+			ctx,
+			customer.Phone,
+			sqlStatement,
+			customer.Name,
+			customer.Password).Scan(
 			&item.ID,
 			&item.Name,
 			&item.Phone,
+			&item.Password,
 			&item.Active,
 			&item.Created)
 	} else {
-		sqlStatement := `UPDATE customers SET name=$1, phone=$2 WHERE id=$3 RETURNING *`
-		err = s.pool.QueryRow(ctx, sqlStatement, customer.Name, customer.Phone, customer.ID).Scan(
+		sqlStatement := `UPDATE customers SET name=$1, phone=$2, password=$3 WHERE id=$4 RETURNING *`
+		err = s.pool.QueryRow(
+			ctx,
+			sqlStatement,
+			customer.Name,
+			customer.Phone,
+			customer.Password,
+			customer.ID).Scan(
 			&item.ID,
 			&item.Name,
 			&item.Phone,
+			&item.Password,
 			&item.Active,
 			&item.Created)
 	}
