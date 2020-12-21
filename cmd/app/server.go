@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 	"github.com/gorilla/mux"
@@ -16,16 +17,12 @@ const (
 	POST   = "POST"
 	DELETE = "DELETE"
 )
-
-func NewServer(mux *mux.Router, customerSvc *customers.Service, sSvc *security.Service) *Server {
-	return &Server{mux: mux, customerSvc: customerSvc, securitySvc: sSvc}
-}
-
 type Server struct {
 	mux         *mux.Router
 	customerSvc *customers.Service
 	securitySvc *security.Service
 }
+
 func NewServer(m *mux.Router, cSvc *customers.Service, sSvc *security.Service) *Server {
 	return &Server{
 		mux:         m,
