@@ -11,11 +11,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/Nappy-Says/crud/pkg/customers"
 )
-type Server struct {
-	mux         *mux.Router
-	customerSvc *customers.Service
-	securitySvc *security.Service
-}
 const (
 	GET    = "GET"
 	POST   = "POST"
@@ -25,71 +20,75 @@ const (
 func NewServer(mux *mux.Router, customerSvc *customers.Service, sSvc *security.Service) *Server {
 	return &Server{mux: mux, customerSvc: customerSvc, securitySvc: sSvc}
 }
-func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	s.mux.ServeHTTP(writer, request)
-}
 
+type Server struct {
+	mux         *mux.Router
+	customerSvc *customers.Service
+	securitySvc *security.Service
+}
+func NewServer(m *mux.Router, cSvc *customers.Service, sSvc *security.Service) *Server {
+	return &Server{
+		mux:         m,
+		customerSvc: cSvc,
+		securitySvc: sSvc,
+	}
+}
 func (s *Server) Init() {
-	log.Println("Init method")
-	s.mux.HandleFunc("/customers", s.handleSave).Methods(POST)
+	
 	s.mux.HandleFunc("/customers", s.handleGetAllCustomers).Methods(GET)
 	s.mux.HandleFunc("/customers/active", s.handleGetAllActiveCustomers).Methods(GET)
-	s.mux.HandleFunc("/customers/{id}", s.handleGetCustomerById).Methods(GET)
-	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods(DELETE)
-	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods(DELETE)
+	s.mux.HandleFunc("/customers/{id}", s.handleGetCustomerByID).Methods(GET)
 	s.mux.HandleFunc("/customers/{id}/block", s.handleBlockByID).Methods(POST)
-
+	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods(DELETE)
+	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods(DELETE)
 	s.mux.HandleFunc("/api/customers", s.handleSave).Methods(POST)
-	s.mux.HandleFunc("/api/customers/token", s.handleGenerateToken).Methods(POST)
+	s.mux.HandleFunc("/api/customers/token", s.handleCreateToken).Methods(POST)
 	s.mux.HandleFunc("/api/customers/token/validate", s.handleValidateToken).Methods(POST)
 	s.mux.Use(middleware.Basic(s.securitySvc.Auth))
 }
 
-func (s *Server) handleGetCustomerById(writer http.ResponseWriter, request *http.Request) {
-	idParam := mux.Vars(request)["id"]
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		log.Println(err)
-		errorWriter(writer, http.StatusBadRequest, err)
-		return
-	}
-
-	item, err := s.customerSvc.ByID(request.Context(), id)
-	log.Println(item)
-	if errors.Is(err, customers.ErrNotFound) {
-		errorWriter(writer, http.StatusNotFound, err)
-		return
-	}
-
-	if err != nil {
-		log.Println(err)
-		errorWriter(writer, http.StatusInternalServerError, err)
-		return
-	}
-
-	jsonResponse(writer, item)
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
 }
-
 func (s *Server) handleGetAllCustomers(w http.ResponseWriter, r *http.Request) {
 	items, err := s.customerSvc.All(r.Context())
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	jsonResponse(w, items)
+	respondJSON(w, items)
 }
 
 func (s *Server) handleGetAllActiveCustomers(w http.ResponseWriter, r *http.Request) {
 	items, err := s.customerSvc.AllActive(r.Context())
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	jsonResponse(w, items)
+	respondJSON(w, items)
+}
+
+func (s *Server) handleGetCustomerByID(w http.ResponseWriter, r *http.Request) {
+	idP := mux.Vars(r)["id"]
+	id, err := strconv.ParseInt(idP, 10, 64)
+
+	if err != nil {
+		errorWriter(w, http.StatusBadRequest, err)
+		return
+	}
+
+	item, err := s.customerSvc.ByID(r.Context(), id)
+
+	if errors.Is(err, customers.ErrNotFound) {
+		errorWriter(w, http.StatusNotFound, err)
+		return
+	}
+	if err != nil {
+		errorWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+	respondJSON(w, item)
 }
 
 func (s *Server) handleBlockByID(w http.ResponseWriter, r *http.Request) {
@@ -102,18 +101,15 @@ func (s *Server) handleBlockByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	item, err := s.customerSvc.ChangeActive(r.Context(), id, false)
-
 	if errors.Is(err, customers.ErrNotFound) {
 		errorWriter(w, http.StatusNotFound, err)
 		return
 	}
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	jsonResponse(w, item)
+	respondJSON(w, item)
 }
 
 func (s *Server) handleUnBlockByID(w http.ResponseWriter, r *http.Request) {
@@ -130,12 +126,12 @@ func (s *Server) handleUnBlockByID(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusNotFound, err)
 		return
 	}
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-	jsonResponse(w, item)
+
+	respondJSON(w, item)
 }
 
 func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
@@ -152,13 +148,12 @@ func (s *Server) handleDelete(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusNotFound, err)
 		return
 	}
-
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	jsonResponse(w, item)
+	respondJSON(w, item)
 }
 
 func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
@@ -168,45 +163,16 @@ func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
 	}
-    //turn onn
-	hashed, err := bcrypt.GenerateFromPassword([]byte(item.Password), bcrypt.DefaultCost)
-	if err != nil {
-		errorWriter(w, http.StatusInternalServerError, err)
-		return
-	}
-	item.Password = string(hashed)
-
 
 	customer, err := s.customerSvc.Save(r.Context(), item)
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	jsonResponse(w, customer)
+	respondJSON(w, customer)
 }
 
-func errorWriter(w http.ResponseWriter, httpSts int, err error) {
-	log.Print(err)
-	http.Error(w, http.StatusText(httpSts), httpSts)
-}
-
-func jsonResponse(writer http.ResponseWriter, data interface{}) {
-	item, err := json.Marshal(data)
-	if err != nil {
-		errorWriter(writer, http.StatusInternalServerError, err)
-		return
-	}
-
-	writer.Header().Set("Content-Type", "application/json")
-	_, err = writer.Write(item)
-	if err != nil {
-		log.Println("Error write response: ", err)
-	}
-}
-
-//token too
-func (s *Server) handleGenerateToken(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	var item *struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
@@ -223,11 +189,9 @@ func (s *Server) handleGenerateToken(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
 	}
-
-	jsonResponse(w, map[string]interface{}{"status": http.StatusText(http.StatusOK), "token": token})
+	respondJSON(w, map[string]interface{}{"status": "ok", "token": token})
 }
 
-//handlers with token
 func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) {
 	var item *struct {
 		Token string `json:"token"`
@@ -241,44 +205,40 @@ func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) {
 	id, err := s.securitySvc.AuthenticateCustomer(r.Context(), item.Token)
 
 	if err != nil {
-		status := http.StatusInternalServerError
-		text := http.StatusText(http.StatusInternalServerError)
-		if err == security.ErrNoSuchUser {
-			status = http.StatusNotFound
-			text = "not found"
-		}
-		if err == security.ErrExpireToken {
-			status = http.StatusBadRequest
-			text = "expired"
-		}
-
-		data, err := json.Marshal(map[string]interface{}{"status": "fail", "reason": text})
-		if err != nil {
-			errorWriter(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(status)
-		_, err = w.Write(data)
-		if err != nil {
-			log.Print(err)
-		}
+		respondJSON(w, map[string]interface{}{"status": "fail", "reason": fmt.Sprintf("%v", err)})
 		return
 	}
+	respondJSON(w, map[string]interface{}{"status": "ok", "customerId": id})
+}
 
-	result := make(map[string]interface{})
-	result["status"] = "ok"
-	result["customerId"] = id
+func errorWriter(w http.ResponseWriter, httpSts int, err error) {
+	log.Print(err)
+	http.Error(w, http.StatusText(httpSts), httpSts)
+}
 
-	data, err := json.Marshal(result)
+func respondJSON(w http.ResponseWriter, iData interface{}) {
+	data, err := json.Marshal(iData)
 	if err != nil {
 		errorWriter(w, http.StatusInternalServerError, err)
 		return
 	}
-
+	
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(data)
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func respondJSONWithCode(w http.ResponseWriter, sts int, iData interface{}) {
+	data, err := json.Marshal(iData)
+
+	if err != nil {
+		errorWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(sts)
+	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
 		log.Print(err)
