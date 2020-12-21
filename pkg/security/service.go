@@ -23,10 +23,8 @@ type Service struct {
 func NewService(db *pgxpool.Pool) *Service {
 	return &Service{db: db}
 }
-
-//req
 func (s *Service) Auth(login, password string) bool {
-	sqlStatement := `SELECT login, password FROM managers WHERE login=$1 AND password=$2`
+	sqlStatement := `select login, password from managers where login=$1 and password=$2`
 	err := s.db.QueryRow(context.Background(), sqlStatement, login, password).Scan(&login, &password)
 	if err != nil {
 		log.Print(err)
@@ -35,46 +33,32 @@ func (s *Service) Auth(login, password string) bool {
 	return true
 }
 
-
-func (s *Service) TokenForCustomer(ctx context.Context, phone, password string) (string, error) {
-
+func (s *Service) TokenForCustomer(ctx context.Context, phone, password string)(string, error){
 	var hash string
 	var id int64
-
-	err := s.db.QueryRow(
-		ctx,
-		"SELECT id, password FROM customers WHERE phone = $1",
-		phone).Scan(&id, &hash)
+	//simple
+	err := s.db.QueryRow(ctx, "select id, password from customers where phone = $1", phone).Scan(&id, &hash)
 	if err == pgx.ErrNoRows {
-
 		return "", ErrNoSuchUser
 	}
-
 	if err != nil {
-
 		return "", ErrInternal
 	}
-
 	err = bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	if err != nil {
-
 		return "", ErrInvalidPassword
 	}
 
 	buffer := make([]byte, 256)
 	n, err := rand.Read(buffer)
 	if n != len(buffer) || err != nil {
-
 		return "", ErrInternal
 	}
 
 	token := hex.EncodeToString(buffer)
-	_, err = s.db.Exec(
-		ctx,
-		"INSERT INTO customers_tokens (token, customer_id) VALUES ($1, $2)",
-		token, id)
+	//simple too
+	_, err = s.db.Exec(ctx, "insert into customers_tokens(token, customer_id) values($1, $2)", token, id)
 	if err != nil {
-
 		return "", ErrInternal
 	}
 
@@ -84,25 +68,17 @@ func (s *Service) TokenForCustomer(ctx context.Context, phone, password string) 
 func (s *Service) AuthenticateCustomer(ctx context.Context, token string) (int64, error) {
 	var id int64
 	var expire time.Time
-	err := s.db.QueryRow(
-		ctx,
-		"SELECT customer_id, expire FROM customers_tokens WHERE token=$1",
-		token).Scan(&id, &expire)
+	err := s.db.QueryRow(ctx, "select customer_id, expire from customers_tokens where token=$1", token).Scan(&id, &expire)
 	if err == pgx.ErrNoRows {
-
 		return 0, ErrNoSuchUser
 	}
-
 	if err != nil {
-
 		return 0, ErrInternal
 	}
 
-	timeNow := time.Now().Format("2020-07-07 10:36:21")
-	timeEnd := expire.Format("2020-07-07 10:36:21")
-
-	if timeNow > timeEnd {
-
+	tNow := time.Now().Format("2006-01-02 15:04:05")
+	tEnd := expire.Format("2006-01-02 15:04:05")
+	if tNow > tEnd {
 		return 0, ErrExpireToken
 	}
 
