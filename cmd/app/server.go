@@ -38,6 +38,10 @@ func (s *Server) Init() {
 	s.mux.HandleFunc("/customers/{id}", s.handleDelete).Methods(DELETE)
 	s.mux.HandleFunc("/customers/{id}/block", s.handleUnBlockByID).Methods(DELETE)
 	s.mux.HandleFunc("/customers/{id}/block", s.handleBlockByID).Methods(POST)
+
+	s.mux.HandleFunc("/api/customers", s.handleSave).Methods(POST)
+	s.mux.HandleFunc("/api/customers/token", s.handleGenerateToken).Methods(POST)
+	s.mux.HandleFunc("/api/customers/token/validate", s.handleValidateToken).Methods(POST)
 	s.mux.Use(middleware.Basic(s.securitySvc.Auth))
 }
 
@@ -164,6 +168,14 @@ func (s *Server) handleSave(w http.ResponseWriter, r *http.Request) {
 		errorWriter(w, http.StatusBadRequest, err)
 		return
 	}
+    //turn onn
+	hashed, err := bcrypt.GenerateFromPassword([]byte(item.Password), bcrypt.DefaultCost)
+	if err != nil {
+		errorWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+	item.Password = string(hashed)
+
 
 	customer, err := s.customerSvc.Save(r.Context(), item)
 	if err != nil {
@@ -190,5 +202,84 @@ func jsonResponse(writer http.ResponseWriter, data interface{}) {
 	_, err = writer.Write(item)
 	if err != nil {
 		log.Println("Error write response: ", err)
+	}
+}
+
+func (s *Server) handleGenerateToken(w http.ResponseWriter, r *http.Request) {
+	var item *struct {
+		Login    string `json:"login"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		errorWriter(w, http.StatusBadRequest, err)
+		return
+	}
+
+	token, err := s.securitySvc.TokenForCustomer(r.Context(), item.Login, item.Password)
+
+	if err != nil {
+		errorWriter(w, http.StatusBadRequest, err)
+		return
+	}
+
+	jsonResponse(w, map[string]interface{}{"status": http.StatusText(http.StatusOK), "token": token})
+}
+
+//handlers with token
+func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) {
+	var item *struct {
+		Token string `json:"token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+		errorWriter(w, http.StatusBadRequest, err)
+		return
+	}
+
+	id, err := s.securitySvc.AuthenticateCustomer(r.Context(), item.Token)
+
+	if err != nil {
+		status := http.StatusInternalServerError
+		text := http.StatusText(http.StatusInternalServerError)
+		if err == security.ErrNoSuchUser {
+			status = http.StatusNotFound
+			text = "not found"
+		}
+		if err == security.ErrExpireToken {
+			status = http.StatusBadRequest
+			text = "expired"
+		}
+
+		data, err := json.Marshal(map[string]interface{}{"status": "fail", "reason": text})
+		if err != nil {
+			errorWriter(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_, err = w.Write(data)
+		if err != nil {
+			log.Print(err)
+		}
+		return
+	}
+
+	result := make(map[string]interface{})
+	result["status"] = "ok"
+	result["customerId"] = id
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		errorWriter(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(data)
+	if err != nil {
+		log.Print(err)
 	}
 }
