@@ -154,7 +154,7 @@ func (s *Service) Save(ctx context.Context, customer *Customer) (c *Customer, er
 	item := &Customer{}
 
 	if customer.ID == 0 {
-		sqlStatement := `INSERT INTO customers(name, phone) VALUES ($1, $2) RETURNING *`
+		sqlStatement := `INSERT INTO customers(name, phone, password) VALUES ($1, $2, $3) RETURNING *`
 		err = s.pool.QueryRow(
 			ctx,
 			customer.Phone,
