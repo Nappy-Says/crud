@@ -7,15 +7,15 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/nappy-says/crud/cmd/app"
-	"github.com/nappy-says/crud/pkg/customer"
+	"github.com/nappy-says/crud/cmd/server"
+	"github.com/nappy-says/crud/pkg/customers"
 )
 
 
 func main() {
 	host := "0.0.0.0"
 	port := "9999"
-	pgxDNS := "postgres://app:pass@localhost/db"
+	pgxDNS := "postgres://postgres:passs@localhost/db"
 
 
 	if err := execute(host, port, pgxDNS); err != nil {
@@ -32,7 +32,7 @@ func execute(host string, port string, dns string) (err error) {
 		log.Println(err)
 		return err
 	}
-	
+
 	defer func ()  {
 		if cerr := db.Close(); cerr != nil {
 			if err == nil {
@@ -44,11 +44,20 @@ func execute(host string, port string, dns string) (err error) {
 		log.Println(err)
 	} ()
 
-	
+
 	mux := http.NewServeMux()
 	customerSvc := customer.NewService(db)
-	
-	server := app.NewServer()
 
+	server := app.NewServer(mux, customerSvc)
+	server.Init()
+
+	srv := &http.Server{
+		Addr: net.JoinHostPort(host, port),
+		Handler: server,
+	}
+
+	log.Println("============| Start server |============")
+
+	return srv.ListenAndServe()
 }
 

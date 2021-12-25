@@ -24,7 +24,6 @@ type Customer struct {
 	Active	bool
 	Created time.Time
 }
-
 func NewService(db *sql.DB) *Service {
 	return &Service{db: db}
 }
@@ -54,10 +53,47 @@ func (s *Service) CustomerGetByID(ctx context.Context, customerID int64) (*Custo
 }
 
 
-// func (s *Service) CustomerGetAll(ctx context.Context) (*[]Customer, error) {
-// 	items := &Customer{}
+func (s *Service) CustomerGetAll(ctx context.Context) ([]*Customer, error) {
+	// create an empty instance for further filling
+	items := make([]*Customer, 0)
 
-	
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, name, phone, active, created
+		FROM customers;
+	`)
 
-	
-// }
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	defer func ()  {
+		// Check close status
+		if cerr := rows.Close(); cerr != nil {
+			log.Println(err)
+		}
+	} ()
+
+	// fill instance 
+	for rows.Next() {
+		tempItem := &Customer{}
+
+		// scan each row
+		err := rows.Scan(&tempItem.ID, &tempItem.Name, &tempItem.Phone, &tempItem.Active, &tempItem.Created)
+
+		if err != nil {
+			log.Println(err)
+			break
+		}
+		items = append(items, tempItem)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return items, nil
+}
+

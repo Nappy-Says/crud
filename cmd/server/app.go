@@ -27,16 +27,30 @@ func (s *Server) ServeHTTP(write http.ResponseWriter, request *http.Request)  {
 
 
 func (s *Server) Init()  {
-	// s.mux.HandleFunc("/customers.getAll", 	s.handleCustomerGetAll)
+	s.mux.HandleFunc("/customers.getAll", 	s.handleCustomerGetAll)
 	s.mux.HandleFunc("/customers.getById", 	s.handleCustomerGetByID)
 }
 
 
 
 
-// func (s *Server) handleCustomerGetAll(write http.ResponseWriter, request *http.Request)  {
+func (s *Server) handleCustomerGetAll(write http.ResponseWriter, request *http.Request)  {
+	items, err := s.customerSvc.CustomerGetAll(request.Context())
+
+	if err != nil {
+		log.Println(err)
+		http.Error(write, http.StatusText(422), 422)
+	}
+
+	data, err := json.Marshal(items)
 	
-// }
+	if err != nil {
+		log.Println(err)
+		http.Error(write, http.StatusText(500), 500)
+	}
+
+	respondJSON(write, data)
+}
 
 
 func (s *Server) handleCustomerGetByID(write http.ResponseWriter, request *http.Request)  {
