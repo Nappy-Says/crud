@@ -95,6 +95,7 @@ func (s *Server) handleCustomerGetByID(write http.ResponseWriter, request *http.
 	}
 
 	if err != nil {
+		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
 	}
 	
@@ -148,6 +149,7 @@ func (s *Server) handleCustomerRemoveByID(write http.ResponseWriter, request *ht
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(400), 400)
+		return
 	}
 	
 	item, err := s.customerSvc.CustomerRemoveByID(request.Context(), id)
@@ -155,10 +157,12 @@ func (s *Server) handleCustomerRemoveByID(write http.ResponseWriter, request *ht
 	if errors.Is(err, customer.ErrNotFound) {
 		log.Println(err)
 		http.Error(write, http.StatusText(404), 404)
+		return
 	}
 
 	if err != nil {
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 	
 	data, err := json.Marshal(item)
@@ -166,6 +170,7 @@ func (s *Server) handleCustomerRemoveByID(write http.ResponseWriter, request *ht
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 
 	respondJSON(write, data)
@@ -178,6 +183,7 @@ func (s *Server) handleCustomerBlockByID(write http.ResponseWriter, request *htt
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(400), 400)
+		return
 	}
 	
 	item, err := s.customerSvc.CustomerUnblockByID(request.Context(), id)
@@ -185,10 +191,13 @@ func (s *Server) handleCustomerBlockByID(write http.ResponseWriter, request *htt
 	if errors.Is(err, customer.ErrNotFound) {
 		log.Println(err)
 		http.Error(write, http.StatusText(404), 404)
+		return
 	}
 
 	if err != nil {
+		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 	
 	data, err := json.Marshal(item)
@@ -196,6 +205,7 @@ func (s *Server) handleCustomerBlockByID(write http.ResponseWriter, request *htt
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 
 	respondJSON(write, data)

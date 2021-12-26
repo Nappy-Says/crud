@@ -104,7 +104,7 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, phone, active, created
 		FROM customers
-		WHERE active = 1;
+		WHERE active = true;
 	`)
 
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 	for rows.Next() {
 		tempItem := &Customer{}
 
-		err := rows.Scan(tempItem.ID, tempItem.Name, tempItem.Phone, tempItem.Active, tempItem.Created)
+		err := rows.Scan(&tempItem.ID, &tempItem.Name, &tempItem.Phone, &tempItem.Active, &tempItem.Created)
 
 		if err != nil {
 			log.Println(err)
