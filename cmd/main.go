@@ -46,7 +46,7 @@ func execute(host string, port string, dns string) (err error) {
 
 
 	mux := http.NewServeMux()
-	customerSvc := customer.NewService(db)
+	customerSvc := customers.NewService(db)
 
 	server := app.NewServer(mux, customerSvc)
 	server.Init()

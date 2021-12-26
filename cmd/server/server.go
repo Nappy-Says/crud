@@ -13,10 +13,10 @@ import (
 
 type Server struct {
 	mux 		*http.ServeMux
-	customerSvc	*customer.Service
+	customerSvc	*customers.Service
 }
 
-func NewServer(mux *http.ServeMux, customerSvc *customer.Service) *Server {
+func NewServer(mux *http.ServeMux, customerSvc *customers.Service) *Server {
 	return &Server{mux: mux, customerSvc: customerSvc}
 }
 
