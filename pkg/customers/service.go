@@ -1,12 +1,13 @@
 package customer
 
 import (
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"context"
 	"database/sql"
 	"errors"
 	"log"
 	"time"
+
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 var ErrNotFound = errors.New("customer not found")
@@ -83,7 +84,7 @@ func (s *Service) CustomerGetAll(ctx context.Context) ([]*Customer, error) {
 
 		if err != nil {
 			log.Println(err)
-			break
+			continue
 		}
 		items = append(items, tempItem)
 	}
@@ -97,3 +98,94 @@ func (s *Service) CustomerGetAll(ctx context.Context) ([]*Customer, error) {
 	return items, nil
 }
 
+func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error) {
+	items := make([]*Customer, 0)
+
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, name, phone, active, created
+		FROM customers
+		WHERE active = 1;
+	`)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	defer func ()  {
+		if err := rows.Close(); err != nil {
+			log.Println(err)
+		}
+	} ()
+
+	for rows.Next() {
+		tempItem := &Customer{}
+
+		err := rows.Scan(tempItem.ID, tempItem.Name, tempItem.Phone, tempItem.Active, tempItem.Created)
+
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		items = append(items, tempItem)
+	}
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (string, error) {
+	var result 	sql.Result
+	var err 	error
+
+	if id == 0 {
+		result, err = s.db.ExecContext(ctx, `
+			INSERT INTO customers(name, phone)
+			VALUES ($1, $2)
+		`, name, phone)
+	} else {
+		result, err = s.db.ExecContext(ctx, `
+			UPDATE customers 
+			SET name = $1, phone = $2
+			WHERE id = $3; 
+		`, name, phone, id)
+	}
+
+	return checkRowsAffetcted(result, err)
+}
+
+
+func (s *Service) CustomerRemoveByID(ctx context.Context, id uint64) (string, error) {
+	result, err := s.db.ExecContext(ctx, `
+		DELETE FROM customers
+		WHERE id = $1;
+	`, id)
+
+	return checkRowsAffetcted(result, err)
+}
+
+
+func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (string, error) {
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE customers
+		SET active = false
+		WHERE id = $1
+	`, id)
+
+	return checkRowsAffetcted(result, err)
+}
+
+func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (string, error) {
+	result, err := s.db.ExecContext(ctx, `
+		UPDATE customers
+		SET active = true
+		WHERE id = $1
+	`, id)
+
+	return checkRowsAffetcted(result, err)
+}
