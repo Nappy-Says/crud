@@ -14,7 +14,7 @@ import (
 
 func main() {
 	host := "0.0.0.0"
-	port := "9999"
+	port := "9991"
 	pgxDNS := "postgres://postgres:passs@localhost/db"
 
 
@@ -46,7 +46,7 @@ func execute(host string, port string, dns string) (err error) {
 
 
 	mux := http.NewServeMux()
-	customerSvc := customers.NewService(db)
+	customerSvc := customer.NewService(db)
 
 	server := app.NewServer(mux, customerSvc)
 	server.Init()
