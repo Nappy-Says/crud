@@ -34,9 +34,9 @@ func (s *Service) CustomerGetByID(ctx context.Context, customerID int64) (*Custo
 	item := &Customer{}
 
 	err := s.db.QueryRowContext(ctx, `
-		SELECT c.id, c.name, c.phone, c.active, c.created
-		FROM customers c
-		WHERE c.id = $1 AND c.active = true;
+		SELECT id, name, phone, active, created
+		FROM customers 
+		WHERE id = $1;
 	`, customerID).Scan(&item.ID, &item.Name, &item.Phone, &item.Active, &item.Created)
 	
 
@@ -60,8 +60,7 @@ func (s *Service) CustomerGetAll(ctx context.Context) ([]*Customer, error) {
 
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, name, phone, active, created
-		FROM customers
-		WHERE active = true;
+		FROM customers;
 	`)
 
 	if err != nil {
