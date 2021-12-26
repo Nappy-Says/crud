@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Nappy-Says/crud/cmd/app"
+	"github.com/nappy-says/crud/cmd/app"
 	"github.com/nappy-says/crud/pkg/customers"
 )
 
