@@ -20,7 +20,8 @@ func checkRowsAffetcted(result sql.Result, err error) (int64, error) {
 		return 0, ErrNotFound
 	}
 
-	log.Println("----", result)
+
+	log.Println("----", )
 	
 	return 1, nil
 }

@@ -120,16 +120,21 @@ func (s *Server) handleCustomerSave(write http.ResponseWriter, request *http.Req
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(400), 400)
+		return
 	}
 
 	item, err := s.customerSvc.CustomerSave(request.Context(), id, name, phone)
 
 	if errors.Is(err, customer.ErrNotFound) {
+		log.Println(err)
 		http.Error(write, http.StatusText(404), 404)
+		return
 	}
 
 	if err != nil {
+		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 
 	data, err := json.Marshal(item)
@@ -137,6 +142,7 @@ func (s *Server) handleCustomerSave(write http.ResponseWriter, request *http.Req
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 
 	respondJSON(write, data)
