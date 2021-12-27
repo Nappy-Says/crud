@@ -140,20 +140,22 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 	return items, nil
 }
 
-func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (ID *int64, err error) {
+func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (customer *Customer, err error) {
+	customer = &Customer{}
+
 	if id == 0 {
 		err = s.db.QueryRowContext(ctx, `
 			INSERT INTO customers(name, phone)
 			VALUES ($1, $2)
-			RETURNING id;
-		`, name, phone).Scan(&ID)
+			RETURNING id, name, phone, active, created; 
+		`, name, phone).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 	} else {
 		err = s.db.QueryRowContext(ctx, `
 			UPDATE customers 
 			SET name = $1, phone = $2
 			WHERE id = $3
-			RETURNING id; 
-		`, name, phone, id).Scan(&ID)
+			RETURNING id, name, phone, active, created; 
+		`, name, phone, id).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 	}
 
 	if errors.Is(err, sql.ErrNoRows) {
