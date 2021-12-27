@@ -176,22 +176,40 @@ func (s *Service) CustomerRemoveByID(ctx context.Context, id uint64) (int64, err
 }
 
 
-func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (int64, error) {
-	result, err := s.db.ExecContext(ctx, `
+func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (customer *Customer, err error) {
+	customer = &Customer{}
+
+	log.Println(id)
+
+	err = s.db.QueryRowContext(ctx, `
 		UPDATE customers
 		SET active = false
 		WHERE id = $1
-	`, id)
+		RETURNING id, name, phone, active, created;
+	`, id).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 
-	return checkRowsAffetcted(result, err)
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Println("no rows")
+		return
+	}
+
+	return customer, nil
 }
 
-func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (int64, error) {
-	result, err := s.db.ExecContext(ctx, `
+func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (customer *Customer, err error) {
+	customer = &Customer{}
+
+	err = s.db.QueryRowContext(ctx, `
 		UPDATE customers
 		SET active = true
 		WHERE id = $1
-	`, id)
+		RETURNING id, name, phone, active, created;
+	`, id).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 
-	return checkRowsAffetcted(result, err)
+	if errors.Is(err, sql.ErrNoRows) {
+		log.Println("no rows")
+		return
+	}
+
+	return customer, nil
 }

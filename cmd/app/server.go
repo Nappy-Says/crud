@@ -192,7 +192,7 @@ func (s *Server) handleCustomerBlockByID(write http.ResponseWriter, request *htt
 		return
 	}
 	
-	item, err := s.customerSvc.CustomerUnblockByID(request.Context(), id)
+	item, err := s.customerSvc.CustomerBlockByID(request.Context(), id)
 
 	if errors.Is(err, customer.ErrNotFound) {
 		log.Println(err)
@@ -232,10 +232,13 @@ func (s *Server) handleCustomerUnblockByID(write http.ResponseWriter, request *h
 	if errors.Is(err, customer.ErrNotFound) {
 		log.Println(err)
 		http.Error(write, http.StatusText(404), 404)
+		return
 	}
 
 	if err != nil {
+		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 	
 	data, err := json.Marshal(item)
@@ -243,6 +246,7 @@ func (s *Server) handleCustomerUnblockByID(write http.ResponseWriter, request *h
 	if err != nil {
 		log.Println(err)
 		http.Error(write, http.StatusText(500), 500)
+		return
 	}
 
 	respondJSON(write, data)
