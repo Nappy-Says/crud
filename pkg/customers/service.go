@@ -2,7 +2,7 @@ package customer
 
 import (
 	"context"
-	"database/sql"
+	// "encoding/json"
 	"errors"
 	"log"
 	"time"
@@ -132,30 +132,34 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 	return items, nil
 }
 
-func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (customer *Customer, err error) {
-	customer = &Customer{}
+func (s *Service) CustomerSave(ctx context.Context, customer *Customer) (*Customer, error) {
+	var err error
 
-	if id == 0 {
+	log.Println("<=====", customer)
+
+	if customer.ID == 0 {
 		err = s.pool.QueryRow(ctx, `
 			INSERT INTO customers(name, phone)
 			VALUES ($1, $2)
 			RETURNING id, name, phone, active, created; 
-		`, name, phone).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
+		`, customer.Name, customer.Phone).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 	} else {
 		err = s.pool.QueryRow(ctx, `
 			UPDATE customers 
 			SET name = $1, phone = $2
 			WHERE id = $3
 			RETURNING id, name, phone, active, created; 
-		`, name, phone, id).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
+		`, customer.Name, customer.Phone, customer.ID).Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.Active, &customer.Created)
 	}
 
 
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, sql.ErrNoRows
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, pgx.ErrNoRows
 	}
 
-	return 
+	log.Println("=====>", customer)
+
+	return customer, nil
 }
 
 

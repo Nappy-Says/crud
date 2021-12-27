@@ -12,4 +12,5 @@ func respondJSON(w http.ResponseWriter, data []byte) {
 	if err != nil {
 		log.Print(err)
 	}
+	return
 }
