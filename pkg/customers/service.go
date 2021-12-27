@@ -140,7 +140,7 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 	return items, nil
 }
 
-func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (string, error) {
+func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phone string) (int64, error) {
 	var result 	sql.Result
 	var err 	error
 
@@ -161,7 +161,7 @@ func (s *Service) CustomerSave(ctx context.Context, id uint64, name string, phon
 }
 
 
-func (s *Service) CustomerRemoveByID(ctx context.Context, id uint64) (string, error) {
+func (s *Service) CustomerRemoveByID(ctx context.Context, id uint64) (int64, error) {
 	result, err := s.db.ExecContext(ctx, `
 		DELETE FROM customers
 		WHERE id = $1;
@@ -171,7 +171,7 @@ func (s *Service) CustomerRemoveByID(ctx context.Context, id uint64) (string, er
 }
 
 
-func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (string, error) {
+func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (int64, error) {
 	result, err := s.db.ExecContext(ctx, `
 		UPDATE customers
 		SET active = false
@@ -181,7 +181,7 @@ func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (string, err
 	return checkRowsAffetcted(result, err)
 }
 
-func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (string, error) {
+func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (int64, error) {
 	result, err := s.db.ExecContext(ctx, `
 		UPDATE customers
 		SET active = true
