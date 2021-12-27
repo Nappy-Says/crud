@@ -19,11 +19,12 @@ type Service struct {
 }
 
 type Customer struct {
-	ID		int64
-	Name	string
-	Phone	string
-	Active	bool
-	Created time.Time
+						// shit 
+	ID		int64		`json:"id"`
+	Name	string		`json:"name"`
+	Phone	string		`json:"phone"`
+	Active	bool		`json:"active"`
+	Created time.Time	`json:"created"`
 }
 func NewService(db *sql.DB) *Service {
 	return &Service{db: db}
