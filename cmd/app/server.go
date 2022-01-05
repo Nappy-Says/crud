@@ -162,19 +162,16 @@ func (s *Server) handleDelete(write http.ResponseWriter, request *http.Request) 
 	respondJSON(write, item)
 }
 
-func (s *Server) handleSave(write http.ResponseWriter, request *http.Request) {
+func (s *Server) handleCustomerSave(write http.ResponseWriter, request *http.Request)  {
 	var item *customer.Customer
 
-	if err := json.NewDecoder(request.Body).Decode(&item); err != nil {
-		errorWriter(write, http.StatusBadRequest, err)
-		return
-	}
+	err := json.NewDecoder(request.Body).Decode(&item)
 
-	customer, err := s.customerSvc.CustomerSave(request.Context(), item)
 	if err != nil {
-		errorWriter(write, http.StatusInternalServerError, err)
+		log.Println(err)
+		http.Error(write, http.StatusText(400), 400)
 		return
 	}
 
-	respondJSON(write, customer)
+	s.customerSvc.CustomerSave(request.Context(), item)
 }
