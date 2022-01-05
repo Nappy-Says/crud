@@ -72,7 +72,7 @@ func (s *Server) handleGetCustomerById(writer http.ResponseWriter, request *http
 }
 
 func (s *Server) handleGetAllCustomers(write http.ResponseWriter, request *http.Request) {
-	items, err := s.customerSvc.CustomerGetAllActive(request.Context())
+	items, err := s.customerSvc.CustomerGetAll(request.Context())
 
 	if err != nil {
 		errorWriter(write, http.StatusInternalServerError, err)
