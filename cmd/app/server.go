@@ -37,6 +37,7 @@ func (s *Server) Init() {
 	s.mux.HandleFunc("/customers", 				s.handleGetAllCustomers).Methods(GET)
 	s.mux.HandleFunc("/customers/active", 		s.handleGetAllActiveCustomers).Methods(GET)
 	s.mux.HandleFunc("/customers/{id}", 		s.handleGetCustomerById).Methods(GET)
+	s.mux.HandleFunc("/customers", 			  	s.handleCustomerSave).Methods(POST)
 
 	s.mux.HandleFunc("/customers/{id}", 		s.handleDelete).Methods(DELETE)
 	s.mux.HandleFunc("/customers/{id}/block", 	s.handleUnBlockByID).Methods(DELETE)
@@ -174,4 +175,6 @@ func (s *Server) handleCustomerSave(write http.ResponseWriter, request *http.Req
 	}
 
 	s.customerSvc.CustomerSave(request.Context(), item)
+
+	respondJSON(write, item)
 }
