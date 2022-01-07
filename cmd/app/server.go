@@ -8,7 +8,9 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/nappy-says/crud/pkg/security"
 	"github.com/nappy-says/crud/pkg/customers"
+	"github.com/nappy-says/crud/cmd/app/middleware"
 )
 
 const (
@@ -21,10 +23,12 @@ const (
 type Server struct {
 	mux     	*mux.Router
 	customerSvc	*customer.Service
+	securitySvc *security.Service
+
 }
 
-func NewServer(mux *mux.Router, customerSvc *customer.Service) *Server {
-	return &Server{mux: mux, customerSvc: customerSvc}
+func NewServer(mux *mux.Router, customerSvc *customer.Service, securitySvc *security.Service) *Server {
+	return &Server{mux: mux, customerSvc: customerSvc, securitySvc: securitySvc}
 }
 
 
@@ -34,6 +38,9 @@ func (s *Server) ServeHTTP(write http.ResponseWriter, request *http.Request)  {
 
 
 func (s *Server) Init() {
+	s.mux.Use(middleware.Basic(s.securitySvc.Auth))
+	s.mux.Use(middleware.Logger)
+
 	s.mux.HandleFunc("/customers", 				s.handleGetAllCustomers).Methods(GET)
 	s.mux.HandleFunc("/customers/active", 		s.handleGetAllActiveCustomers).Methods(GET)
 	s.mux.HandleFunc("/customers/{id}", 		s.handleGetCustomerById).Methods(GET)

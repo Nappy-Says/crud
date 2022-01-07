@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/nappy-says/crud/cmd/app"
+	"github.com/nappy-says/crud/pkg/security"
 	"github.com/nappy-says/crud/pkg/customers"
 	"go.uber.org/dig"
 )
@@ -18,7 +19,7 @@ import (
 
 func main() {
 	host := "0.0.0.0"
-	port := "9991"
+	port := "9999"
 	pgxDNS := "postgres://postgres:passs@localhost/db"
 
 
@@ -34,6 +35,7 @@ func execute(host string, port string, dns string) (err error) {
 	deps := []interface{}{
 		app.NewServer,
 		mux.NewRouter,
+		security.NewService,
 		// http.NewServeMux,
  		func() (*pgxpool.Pool, error) {
 			ctx, _ := context.WithTimeout(context.Background(), time.Second * 5)
