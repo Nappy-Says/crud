@@ -2,6 +2,9 @@ package customer
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
+
 	// "encoding/json"
 	"errors"
 	"log"
@@ -20,12 +23,13 @@ type Service struct {
 }
 
 type Customer struct {
-						// shit 
-	ID		int64		`json:"id"`
-	Name	string		`json:"name"`
-	Phone	string		`json:"phone"`
-	Active	bool		`json:"active"`
-	Created time.Time	`json:"created"`
+							// shit 
+	ID			int64		`json:"id"`
+	Name		string		`json:"name"`
+	Phone		string		`json:"phone"`
+	Active		bool		`json:"active"`
+	Created 	time.Time	`json:"created"`
+	Password	string		`json:"password"`
 }
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{pool: pool}
@@ -95,6 +99,7 @@ func (s *Service) CustomerGetAll(ctx context.Context) ([]*Customer, error) {
 	return items, nil
 }
 
+
 func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error) {
 	items := make([]*Customer, 0)
 
@@ -131,6 +136,7 @@ func (s *Service) CustomerGetAllActive(ctx context.Context) ([]*Customer, error)
 
 	return items, nil
 }
+
 
 func (s *Service) CustomerSave(ctx context.Context, customer *Customer) (*Customer, error) {
 	var err error
@@ -193,6 +199,7 @@ func (s *Service) CustomerBlockByID(ctx context.Context, id uint64) (customer *C
 	return customer, nil
 }
 
+
 func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (customer *Customer, err error) {
 	customer = &Customer{}
 
@@ -209,4 +216,33 @@ func (s *Service) CustomerUnblockByID(ctx context.Context, id uint64) (customer 
 	}
 
 	return customer, nil
+}
+
+
+func (s *Service) CustomerRegistration(ctx context.Context, customer *Customer) (err error, id int) {
+	hash := md5.New()
+	
+	_, err = hash.Write([]byte(customer.Password))
+	if err != nil {
+		log.Println(err)
+		return 
+	}
+
+	hashSum := hash.Sum([]byte(nil))
+
+
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO customers(phone, name, password)
+		VALUES($1, $2, $3)
+		ON CONFLICT (phone) DO NOTHING
+			RETURNING id;
+	`, customer.Phone, customer.Name, hex.EncodeToString(hashSum)).Scan(&id)
+
+
+	if err != nil {
+		log.Println(err)
+		return err, id
+	}
+
+	return nil, id
 }
